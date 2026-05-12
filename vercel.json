@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "corepack prepare pnpm@11.1.0 --activate && corepack pnpm install --allow-build=sharp --allow-build=unrs-resolver --allow-build=@tailwindcss/oxide"
+  "installCommand": "npx --yes pnpm@11.1.0 install --allow-build=sharp --allow-build=unrs-resolver --allow-build=@tailwindcss/oxide",
+  "buildCommand": "npx --yes pnpm@11.1.0 run build"
 }
