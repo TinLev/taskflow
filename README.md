@@ -8,7 +8,7 @@ Smart task management web app — Kanban, List, Calendar, drag-and-drop, command
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js) ![React](https://img.shields.io/badge/React-19-149eca?logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?logo=tailwindcss) ![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Radix-000) ![pnpm](https://img.shields.io/badge/pnpm-11-f69220?logo=pnpm)
 
-[Live demo](#) · [Source](#) · [Báo cáo bug](#)
+[Live demo](https://taskflow-omega-rosy.vercel.app) · [Source](https://github.com/TinLev/taskflow) · [Báo cáo bug](https://github.com/TinLev/taskflow/issues)
 
 </div>
 
