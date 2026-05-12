@@ -71,6 +71,21 @@ export const ProjectsSchema = z.array(ProjectSchema);
 export const TasksSchema = z.array(TaskSchema);
 
 /* ───────────────────────────────────────────────────────────────
+ * Auth — stored credentials.
+ *
+ * ⚠️ DEMO ONLY: passwords are kept in plaintext in localStorage.
+ * In production, NEVER store passwords in the client. Use a real
+ * backend with a slow KDF (bcrypt / argon2) and HTTPS-only cookies.
+ * This is acceptable here because the app is a self-contained
+ * frontend demo with no real user data.
+ * ─────────────────────────────────────────────────────────── */
+export const StoredUserSchema = z.object({
+  user: UserSchema,
+  password: z.string().min(6),
+});
+export const StoredUsersSchema = z.array(StoredUserSchema);
+
+/* ───────────────────────────────────────────────────────────────
  * Form schemas — auth & CRUD inputs
  * ─────────────────────────────────────────────────────────── */
 export const LoginSchema = z.object({
