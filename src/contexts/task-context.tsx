@@ -111,6 +111,10 @@ interface TaskContextValue {
   deleteTasksByProject: (projectId: string) => void;
   deleteTasksByProjects: (projectIds: string[]) => void;
 
+  // Bulk operations — used by List view's selection toolbar.
+  bulkUpdate: (ids: string[], patch: Partial<Omit<Task, "id" | "projectId" | "createdAt">>) => void;
+  bulkDelete: (ids: string[]) => void;
+
   // Drag-and-drop helper — reseats every task in a (project, status)
   // pair with consecutive `order` values matching `orderedIds`. Tasks
   // crossing columns get their status overwritten too.
@@ -263,6 +267,39 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     [myProjectIds],
   );
 
+  const bulkUpdate = useCallback<TaskContextValue["bulkUpdate"]>(
+    (ids, patch) => {
+      const t = now();
+      const allowed = new Set(
+        state.tasks
+          .filter((task) => ids.includes(task.id) && myProjectIds.has(task.projectId))
+          .map((task) => task.id),
+      );
+      if (allowed.size === 0) return;
+      dispatch({
+        type: "BATCH_UPDATE",
+        payload: Array.from(allowed).map((id) => ({
+          id,
+          patch: { ...patch, updatedAt: t },
+        })),
+      });
+    },
+    [state.tasks, myProjectIds],
+  );
+
+  const bulkDelete = useCallback<TaskContextValue["bulkDelete"]>(
+    (ids) => {
+      const allowed = state.tasks
+        .filter((task) => ids.includes(task.id) && myProjectIds.has(task.projectId))
+        .map((task) => task.id);
+      // No DELETE_MANY action — issue per-id DELETE; reducer is O(n)
+      // per dispatch but the runtime cost stays under a tick for the
+      // bulk sizes a single human selects in a UI.
+      for (const id of allowed) dispatch({ type: "DELETE", payload: { id } });
+    },
+    [state.tasks, myProjectIds],
+  );
+
   const addSubtask = useCallback<TaskContextValue["addSubtask"]>(
     (taskId, title) => {
       const trimmed = title.trim();
@@ -330,6 +367,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       deleteTask,
       deleteTasksByProject,
       deleteTasksByProjects,
+      bulkUpdate,
+      bulkDelete,
       reorderColumn,
       addSubtask,
       toggleSubtask,
@@ -345,6 +384,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       deleteTask,
       deleteTasksByProject,
       deleteTasksByProjects,
+      bulkUpdate,
+      bulkDelete,
       reorderColumn,
       addSubtask,
       toggleSubtask,

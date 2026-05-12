@@ -306,7 +306,7 @@ const TONE_CLASSES: Record<StatCardProps["tone"], string> = {
 
 function StatCard({ icon: Icon, label, value, tone, hint }: StatCardProps) {
   return (
-    <Card>
+    <Card className="animate-in fade-in-50 slide-in-from-bottom-1 duration-300">
       <CardContent className="flex items-center gap-3 p-4">
         <div
           className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${TONE_CLASSES[tone]}`}

@@ -2,8 +2,21 @@
 
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Building2, LogOut, Pencil, Plus, ShieldAlert, Trash2, UserIcon } from "lucide-react";
-import { useState } from "react";
+import {
+  Building2,
+  Database,
+  Download,
+  FileJson,
+  FileSpreadsheet,
+  LogOut,
+  Pencil,
+  Plus,
+  ShieldAlert,
+  Trash2,
+  Upload,
+  UserIcon,
+} from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { WorkspaceDeleteDialog } from "@/components/features/workspace/workspace-delete-dialog";
@@ -26,6 +39,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/auth-context";
 import { useProjects } from "@/contexts/project-context";
 import { useWorkspaces } from "@/contexts/workspace-context";
+import {
+  downloadDataExport,
+  downloadTasksCSV,
+  importDataFromJSON,
+  readJSONFile,
+} from "@/lib/data-export";
 import { safeStorage } from "@/lib/storage";
 import type { Workspace } from "@/types";
 
@@ -35,11 +54,41 @@ export default function SettingsPage() {
   const { getProjectsByWorkspace } = useProjects();
   const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+  const [importConfirm, setImportConfirm] = useState<{ json: unknown } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleClearAllData() {
     safeStorage.clear("taskflow:");
     toast.success("Đã xóa toàn bộ dữ liệu local. Đang đăng xuất...");
     setTimeout(() => logout(), 500);
+  }
+
+  async function handleFileChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting same file later
+    if (!file) return;
+    try {
+      const json = await readJSONFile(file);
+      setImportConfirm({ json });
+    } catch {
+      toast.error("File không phải JSON hợp lệ");
+    }
+  }
+
+  function handleConfirmImport() {
+    if (!importConfirm) return;
+    const result = importDataFromJSON(importConfirm.json);
+    if (!result.ok) {
+      toast.error(result.error);
+      setImportConfirm(null);
+      return;
+    }
+    toast.success(
+      `Đã import: ${result.counts.workspaces} workspaces / ${result.counts.projects} projects / ${result.counts.tasks} tasks. Đang tải lại...`,
+    );
+    setImportConfirm(null);
+    // Full reload is cleanest — every provider rehydrates from new storage.
+    setTimeout(() => window.location.reload(), 800);
   }
 
   return (
@@ -58,6 +107,9 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="workspaces" className="gap-1.5">
             <Building2 className="size-3.5" /> Workspaces
+          </TabsTrigger>
+          <TabsTrigger value="data" className="gap-1.5">
+            <Database className="size-3.5" /> Dữ liệu
           </TabsTrigger>
           <TabsTrigger value="danger" className="gap-1.5">
             <ShieldAlert className="size-3.5" /> Danger zone
@@ -159,6 +211,54 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+        {/* ─────────────── Data tab */}
+        <TabsContent value="data" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Export dữ liệu</CardTitle>
+              <CardDescription>
+                Tải về snapshot toàn bộ workspaces / projects / tasks của trình duyệt này. Hữu ích
+                cho backup, migration sang account khác, hoặc share dữ liệu mẫu.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <Button onClick={downloadDataExport} variant="outline" className="gap-1.5">
+                <FileJson className="size-4" /> Tải JSON đầy đủ
+              </Button>
+              <Button onClick={downloadTasksCSV} variant="outline" className="gap-1.5">
+                <FileSpreadsheet className="size-4" /> Tải tasks (CSV)
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Import từ JSON</CardTitle>
+              <CardDescription>
+                Khôi phục từ file đã export. <strong>Lưu ý:</strong> dữ liệu hiện tại sẽ bị ghi đè
+                (không merge). Schema được validate qua zod trước khi áp dụng.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json"
+                onChange={handleFileChosen}
+                className="sr-only"
+                aria-label="Chọn file JSON"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                className="gap-1.5"
+              >
+                <Upload className="size-4" /> Chọn file...
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* ─────────────── Danger zone tab */}
         <TabsContent value="danger" className="space-y-4">
           <Card>
@@ -228,6 +328,25 @@ export default function SettingsPage() {
           onOpenChange={(open) => !open && setEditingWorkspace(null)}
         />
       )}
+
+      <AlertDialog open={importConfirm !== null} onOpenChange={(o) => !o && setImportConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ghi đè dữ liệu hiện tại?</AlertDialogTitle>
+            <AlertDialogDescription>
+              File này sẽ thay thế toàn bộ workspaces / projects / tasks hiện tại trong trình duyệt.
+              Hãy export backup trước nếu bạn cần dữ liệu cũ.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmImport}>
+              <Download className="mr-2 size-4 rotate-180" />
+              Import & reload
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

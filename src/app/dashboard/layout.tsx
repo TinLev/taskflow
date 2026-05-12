@@ -1,4 +1,5 @@
 import { AuthGuard } from "@/components/features/auth/auth-guard";
+import { CommandPalette } from "@/components/features/command-palette/command-palette";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
 import { ProjectProvider } from "@/contexts/project-context";
@@ -35,6 +36,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </main>
               </div>
             </div>
+            {/* Global ⌘K + ⌘N + ⌘/ launcher — must live inside every
+                provider it queries (auth, workspaces, projects). */}
+            <CommandPalette />
           </TaskProvider>
         </ProjectProvider>
       </WorkspaceProvider>
