@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/auth-context";
 
 import "./globals.css";
@@ -54,8 +55,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
-            <Toaster richColors position="top-right" closeButton />
+            <TooltipProvider delayDuration={200}>
+              {children}
+              <Toaster richColors position="top-right" closeButton />
+            </TooltipProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
