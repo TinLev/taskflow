@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useProjects } from "@/contexts/project-context";
+import { useTasks } from "@/contexts/task-context";
 import { useWorkspaces } from "@/contexts/workspace-context";
 import type { Workspace } from "@/types";
 
@@ -28,16 +29,13 @@ interface WorkspaceDeleteDialogProps {
 }
 
 /**
- * WorkspaceDeleteDialog — confirmation modal that cascades to projects.
+ * WorkspaceDeleteDialog — confirmation modal that cascades to projects + tasks.
  *
- * Cascade order:
- *  1. Delete all projects under this workspace.
- *  2. Delete the workspace itself.
- *
- * This order matters: doing it the other way around would leave
- * `projects` with a workspaceId pointing to a deleted workspace,
- * causing the filter in ProjectContext to drop them anyway — but
- * being explicit keeps the code's intent obvious.
+ * Cascade order (children → parent so orphan filtering never sees an
+ * inconsistent state in between dispatches):
+ *  1. Delete all tasks of every project under this workspace.
+ *  2. Delete all projects under this workspace.
+ *  3. Delete the workspace itself.
  */
 export function WorkspaceDeleteDialog({
   workspace,
@@ -47,14 +45,19 @@ export function WorkspaceDeleteDialog({
   const router = useRouter();
   const { deleteWorkspace } = useWorkspaces();
   const { getProjectsByWorkspace, deleteProjectsByWorkspace } = useProjects();
+  const { deleteTasksByProjects, getTasksByProject } = useTasks();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const projectCount = getProjectsByWorkspace(workspace.id).length;
+  const projectsInWs = getProjectsByWorkspace(workspace.id);
+  const projectCount = projectsInWs.length;
+  const taskCount = projectsInWs.reduce((sum, p) => sum + getTasksByProject(p.id).length, 0);
 
   async function handleConfirm() {
     setDeleting(true);
     try {
+      const projectIds = projectsInWs.map((p) => p.id);
+      if (projectIds.length > 0) deleteTasksByProjects(projectIds);
       deleteProjectsByWorkspace(workspace.id);
       deleteWorkspace(workspace.id);
       toast.success(`Đã xóa workspace "${workspace.name}"`);
@@ -72,9 +75,10 @@ export function WorkspaceDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Xóa workspace &ldquo;{workspace.name}&rdquo;?</AlertDialogTitle>
           <AlertDialogDescription>
-            Hành động này không thể hoàn tác. Tất cả{" "}
-            <span className="text-foreground font-medium">{projectCount} project</span> và tasks
-            trong workspace này sẽ bị xóa vĩnh viễn.
+            Hành động này không thể hoàn tác.{" "}
+            <span className="text-foreground font-medium">{projectCount} project</span> và{" "}
+            <span className="text-foreground font-medium">{taskCount} task</span> trong workspace
+            này sẽ bị xóa vĩnh viễn.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

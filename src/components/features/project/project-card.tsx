@@ -26,20 +26,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useProjects } from "@/contexts/project-context";
+import { useTasks } from "@/contexts/task-context";
 import type { Project } from "@/types";
 
 interface ProjectCardProps {
   project: Project;
-  /** href to open project view (Phase 4 wires Kanban). */
+  /** href to open project Kanban / List / Calendar. */
   href: string;
 }
 
 export function ProjectCard({ project, href }: ProjectCardProps) {
   const { deleteProject } = useProjects();
+  const { deleteTasksByProject, getTasksByProject } = useTasks();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  const taskCount = getTasksByProject(project.id).length;
+
   function handleConfirmDelete() {
+    deleteTasksByProject(project.id);
     deleteProject(project.id);
     toast.success(`Đã xóa project "${project.name}"`);
     setDeleteOpen(false);
@@ -94,9 +99,9 @@ export function ProjectCard({ project, href }: ProjectCardProps) {
           </div>
 
           <Link href={href} className="mt-4 block">
-            <div className="text-muted-foreground flex items-center gap-3 text-xs">
-              <span>—</span>
-              <span className="opacity-60">Tasks sẽ xuất hiện ở Phase 4</span>
+            <div className="text-muted-foreground flex items-center gap-2 text-xs">
+              <span className="font-medium">{taskCount}</span>
+              <span>task{taskCount !== 1 ? "s" : ""}</span>
             </div>
           </Link>
         </CardContent>
@@ -109,7 +114,8 @@ export function ProjectCard({ project, href }: ProjectCardProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Xóa project &ldquo;{project.name}&rdquo;?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tất cả tasks trong project này cũng sẽ bị xóa. Hành động không thể hoàn tác.
+              <span className="text-foreground font-medium">{taskCount} task</span> trong project
+              này cũng sẽ bị xóa. Hành động không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

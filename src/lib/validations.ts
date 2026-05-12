@@ -117,21 +117,32 @@ export const ProjectFormSchema = ProjectSchema.pick({
   icon: true,
 });
 
-export const TaskFormSchema = TaskSchema.pick({
-  title: true,
-  description: true,
-  status: true,
-  priority: true,
-  dueDate: true,
-  tags: true,
-  assigneeId: true,
+/**
+ * TaskFormSchema — defined inline (not picked from TaskSchema) so we can
+ * use plain `z.date()` instead of `z.coerce.date()`. Forms work with Date
+ * objects directly; the storage layer keeps coercion for ISO round-trips.
+ */
+export const TaskFormSchema = z.object({
+  title: z.string().min(1, "Tiêu đề không được trống").max(200),
+  description: z.string().max(5000).optional(),
+  status: TaskStatusSchema,
+  priority: TaskPrioritySchema,
+  dueDate: z.date().optional(),
+  tags: z.array(z.string().min(1).max(30)).default([]),
+  assigneeId: z.string().min(1).optional(),
 });
 
 /* ───────────────────────────────────────────────────────────────
- * Inferred form input types (use in react-hook-form)
+ * Form input types (use in react-hook-form).
+ *
+ * Note on z.input vs z.infer: schemas with `.default(...)` produce
+ * different types — the OUTPUT (post-parse) makes the field required,
+ * but the INPUT (what the form actually provides) leaves it optional.
+ * React Hook Form's resolver works with the INPUT type, so we explicitly
+ * pick `z.input<>` here to keep TS in sync with runtime expectations.
  * ─────────────────────────────────────────────────────────── */
-export type LoginInput = z.infer<typeof LoginSchema>;
-export type RegisterInput = z.infer<typeof RegisterSchema>;
-export type WorkspaceFormInput = z.infer<typeof WorkspaceFormSchema>;
-export type ProjectFormInput = z.infer<typeof ProjectFormSchema>;
-export type TaskFormInput = z.infer<typeof TaskFormSchema>;
+export type LoginInput = z.input<typeof LoginSchema>;
+export type RegisterInput = z.input<typeof RegisterSchema>;
+export type WorkspaceFormInput = z.input<typeof WorkspaceFormSchema>;
+export type ProjectFormInput = z.input<typeof ProjectFormSchema>;
+export type TaskFormInput = z.input<typeof TaskFormSchema>;
